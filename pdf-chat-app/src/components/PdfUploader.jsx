@@ -1,33 +1,60 @@
-import React, { useState } from 'react';
-import { Document, Page } from 'react-pdf';
-import { pdfjs } from 'react-pdf';
+import React, { useState } from "react";
+import * as pdfjsLib from "pdfjs-dist"; // Correct import
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import "react-pdf/dist/esm/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+// Make sure to use the correct worker URL.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
-const PdfUploader = ({ onUpload }) => {
+const PdfUploader = () => {
   const [file, setFile] = useState(null);
-  const [numPages, setNumPages] = useState(null);
+  const [error, setError] = useState("");
+  const [sentences, setSentences] = useState([]);
 
-  const onFileChange = (event) => {
-    const file = event.target.files[0];
-    setFile(URL.createObjectURL(file));
-    onUpload(file);
+  const onFileChange = async (event) => {
+    const selectedFile = event.target.files[0];
+
+    if (selectedFile && selectedFile.type === "application/pdf") {
+      setFile(URL.createObjectURL(selectedFile));
+      setError("");
+      await extractSentencesFromPdf(selectedFile);
+    } else {
+      setError("Please select a valid PDF file.");
+    }
   };
 
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
+  const extractSentencesFromPdf = async (pdfFile) => {
+    const fileBuffer = await pdfFile.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument(fileBuffer);
+    const pdf = await loadingTask.promise;
+    const extractedSentences = [];
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+
+      textContent.items.forEach((item) => {
+        const text = item.str;
+        const splitSentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+        extractedSentences.push(...splitSentences.map(s => s.trim()));
+      });
+    }
+
+    setSentences(extractedSentences);
   };
 
   return (
     <div>
       <input type="file" accept="application/pdf" onChange={onFileChange} />
-      {file && (
-        <Document file={file} onLoadSuccess={onDocumentLoadSuccess}>
-          {Array.from(new Array(numPages), (el, index) => (
-            <Page key={`page_${index + 1}`} pageNumber={index + 1} />
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <div>
+        <h2>Extracted Sentences:</h2>
+        <ul>
+          {sentences.map((sentence, index) => (
+            <p key={index}>{sentence}</p>
           ))}
-        </Document>
-      )}
+        </ul>
+      </div>
     </div>
   );
 };
