@@ -17,7 +17,7 @@ Clone the repository:
 ```bash
 git clone git@github.com:kamranahmedse/barqRag.git
 pip install -r requirements.txt
-python app.py
+python rag.py
 ```
 
 ## Usage
