@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const ChatInterface = ({ onSendMessage, messages }) => {
+const ChatInterface = ({ onSendMessage, messages = [] }) => {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
@@ -13,10 +13,10 @@ const ChatInterface = ({ onSendMessage, messages }) => {
   return (
     <div>
       <div className="chat-box">
-        {messages.map((msg, index) => (
-          <p key={index} className={msg.sender === "user" ? "user-msg" : "ai-msg"}>
-            <strong>{msg.sender === "user" ? "You: " : "AI: "}</strong>
-            {msg.text}
+        {Array.isArray(messages) && messages.map((msg, index) => (
+          <p key={index} className={msg?.sender === "user" ? "user-msg" : "ai-msg"}>
+            <strong>{msg?.sender === "user" ? "You: " : "AI: "}</strong>
+            {typeof msg.text === "string" ? msg.text : JSON.stringify(msg)}
           </p>
         ))}
       </div>
